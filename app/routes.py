@@ -1,28 +1,36 @@
-from app import webserver
-from flask import request, jsonify
-
+"""
+Module defining all API routes for the web server.
+Provides endpoints for data retrieval, job management and server control.
+"""
 import os
 import json
+from threading import Lock
+
+from flask import request, jsonify
+from app import webserver
+
+webserver.counter_lock = Lock()
 
 # helper function to register a job and return job_id
 def register_job(job_func):
-    job_id = f"job_id_{webserver.job_counter}"
-    webserver.job_counter += 1
+    with webserver.counter_lock:
+        job_id = f"job_id_{webserver.job_counter}"
+        webserver.job_counter += 1
 
-    # check if server is shutting down
-    if webserver.tasks_runner.is_shutting_down():
+        # check if server is shutting down
+        if webserver.tasks_runner.is_shutting_down():
+            return jsonify({
+                "status": "error",
+                "reason": "shutting down"
+            }), 503
+
+        # register job with the thread pool
+        webserver.tasks_runner.add_job(job_id, job_func)
+
         return jsonify({
-            "status": "error",
-            "reason": "shutting down"
-        }), 503
-
-    # register job with the thread pool
-    webserver.tasks_runner.add_job(job_id, job_func)
-
-    return jsonify({
-        "status": "accepted",
-        "job_id": job_id
-    })
+            "status": "accepted",
+            "job_id": job_id
+        })
 
 @webserver.route('/api/get_results/<job_id>', methods=['GET'])
 def get_response(job_id):
@@ -49,7 +57,7 @@ def get_response(job_id):
                 'reason': f'Result file not found for job {job_id}'
             })
 
-        with open(result_file_path, 'r') as f:
+        with open(result_file_path, 'r', encoding='utf-8') as f:
             file_content = f.read().strip()
             if not file_content:
                 return jsonify({
@@ -72,7 +80,6 @@ def get_response(job_id):
         })
 
     except Exception as e:
-        print(f"Error retrieving result for job {job_id}: {str(e)}")
         return jsonify({
             'status': 'error',
             'reason': f'Failed to read result: {str(e)}'
@@ -82,7 +89,6 @@ def get_response(job_id):
 def states_mean_request():
     # Get request data
     data = request.json
-    print(f"Got request {data}")
 
     # Register job. Don't wait for task to finish
     # Increment job_id counter
@@ -175,7 +181,7 @@ def worst5_request():
         })
 
     question = data['question']
-    
+
     # define the job function
     def job_func():
         return webserver.data_ingestor.worst5(question)
@@ -325,10 +331,9 @@ def graceful_shutdown():
         return jsonify({
             "status": "done"
         })
-    else:
-        return jsonify({
-            "status": "running"
-        })
+    return jsonify({
+        "status": "running"
+    })
 
 @webserver.route('/api/jobs', methods=['GET'])
 def jobs():

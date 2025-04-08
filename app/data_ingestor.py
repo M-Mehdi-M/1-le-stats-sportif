@@ -1,3 +1,7 @@
+"""
+Module for processing and analyzing nutrition and obesity data from CSV files.
+Provides functions to calculate various statistics for states and categories.
+"""
 import pandas as pd
 
 class DataIngestor:
@@ -14,10 +18,26 @@ class DataIngestor:
         ]
 
         self.questions_best_is_max = [
-            'Percent of adults who achieve at least 150 minutes a week of moderate-intensity aerobic physical activity or 75 minutes a week of vigorous-intensity aerobic activity (or an equivalent combination)',
-            'Percent of adults who achieve at least 150 minutes a week of moderate-intensity aerobic physical activity or 75 minutes a week of vigorous-intensity aerobic physical activity and engage in muscle-strengthening activities on 2 or more days a week',
-            'Percent of adults who achieve at least 300 minutes a week of moderate-intensity aerobic physical activity or 150 minutes a week of vigorous-intensity aerobic activity (or an equivalent combination)',
-            'Percent of adults who engage in muscle-strengthening activities on 2 or more days a week',
+            (
+            "Percent of adults who achieve at least 150 minutes a week of "
+            "moderate-intensity aerobic physical activity or 75 minutes a week of "
+            "vigorous-intensity aerobic activity (or an equivalent combination)"
+            ),
+            (
+                "Percent of adults who achieve at least 150 minutes a week of "
+                "moderate-intensity aerobic physical activity or 75 minutes a week of "
+                "vigorous-intensity aerobic physical activity and engage in "
+                "muscle-strengthening activities on 2 or more days a week"
+            ),
+            (
+                "Percent of adults who achieve at least 300 minutes a week of "
+                "moderate-intensity aerobic physical activity or 150 minutes a week of "
+                "vigorous-intensity aerobic activity (or an equivalent combination)"
+            ),
+            (
+                "Percent of adults who engage in muscle-strengthening activities on 2 "
+                "or more days a week"
+            ),
         ]
 
     def states_mean(self, question):
@@ -79,9 +99,12 @@ class DataIngestor:
         return {"global_mean": mean_value}
 
     def state_mean_by_category(self, question, state):
-        filtered_df = self.df[(self.df['Question'] == question) & (self.df['LocationDesc'] == state)]
+        filtered_df = self.df[(self.df['Question'] == question) &
+                              (self.df['LocationDesc'] == state)]
 
-        mean_df = filtered_df.groupby(['StratificationCategory1', 'Stratification1'])['Data_Value'].mean().reset_index()
+        mean_df = filtered_df.groupby(
+            ['StratificationCategory1', 'Stratification1']
+            )['Data_Value'].mean().reset_index()
 
         ans = {}
         for _, row in mean_df.iterrows():
@@ -95,7 +118,9 @@ class DataIngestor:
         return {state: ans}
 
     def state_mean(self, question, state):
-        filtered_df = self.df[(self.df['Question'] == question) & (self.df['LocationDesc'] == state)]
+        filtered_df = self.df[
+            (self.df['Question'] == question) & (self.df['LocationDesc'] == state)
+            ]
         if filtered_df.empty:
             return {}
 
@@ -135,7 +160,8 @@ class DataIngestor:
 
         result = {}
 
-        for (state, category, stratification), group_df in filtered_df.groupby(['LocationDesc', 'StratificationCategory1', 'Stratification1']):
+        for (state, category, stratification), group_df in filtered_df.groupby(
+            ['LocationDesc', 'StratificationCategory1', 'Stratification1']):
 
             if pd.notna(category) and pd.notna(stratification):
 

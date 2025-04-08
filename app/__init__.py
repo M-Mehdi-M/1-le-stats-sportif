@@ -1,3 +1,7 @@
+"""
+Flask application initialization module.
+Creates the Flask app initializes the ThreadPool and DataIngestor.
+"""
 import os
 from flask import Flask
 from app.data_ingestor import DataIngestor

@@ -1,7 +1,18 @@
+"""
+Module providing thread pool implementation for task execution.
+Contains ThreadPool and TaskRunner classes for managing asynchronous jobs.
+"""
 import os
 import json
 from queue import Queue, Empty
 from threading import Thread, Event, Lock
+import logging
+
+logging.basicConfig(
+    filename='app.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 class ThreadPool:
     def __init__(self):
@@ -96,16 +107,17 @@ class TaskRunner(Thread):
                         # verify that the result is JSON serializable
                         json_string = json.dumps(result)
 
-                        with open(f'results/{job_id}', 'w') as f:
+                        with open(f'results/{job_id}', 'w', encoding='utf-8') as f:
                             f.write(json_string)
 
                         # update job status
                         with self.jobs_lock:
                             self.jobs_status[job_id] = 'done'
                     except TypeError as e:
-                        # handle non-serializable objects (like tuples as dictionary keys)
-                        print(f"TypeError serializing result for job {job_id}: {str(e)}")
-                        print(f"Attempting to convert result to serializable format")
+                        # handle non-serializable objects
+                        logging.warning(
+                            "TypeError serializing result for job %s, attempting conversion", job_id
+                        )
 
                         # try to convert result to a serializable format
                         if isinstance(result, dict):
@@ -120,7 +132,7 @@ class TaskRunner(Thread):
                             # try to serialize the converted result
                             json_string = json.dumps(serializable_result)
 
-                            with open(f'results/{job_id}', 'w') as f:
+                            with open(f'results/{job_id}', 'w', encoding='utf-8') as f:
                                 f.write(json_string)
 
                             # update job status
@@ -131,10 +143,10 @@ class TaskRunner(Thread):
                             raise e
 
                 except Exception as e:
-                    print(f"Error processing job {job_id}: {str(e)}")
+                    logging.error("Error processing job %s: %s", job_id, e)
 
                     # save error result
-                    with open(f'results/{job_id}', 'w') as f:
+                    with open(f'results/{job_id}', 'w', encoding='utf-8') as f:
                         json.dump({"error": str(e)}, f)
 
                     # mark job as done (with error)
@@ -148,4 +160,4 @@ class TaskRunner(Thread):
                 continue
             except Exception as e:
                 # general error
-                print(f"Unexpected error in TaskRunner: {str(e)}")
+                logging.error("Unexpected error in TaskRunner: %s", e)

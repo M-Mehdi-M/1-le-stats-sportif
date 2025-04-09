@@ -21,7 +21,7 @@ handler = RotatingFileHandler('webserver.log', maxBytes=1024*1024, backupCount=5
 handler.setLevel(logging.INFO)
 
 def timetz(*args):
-    """Return gmtime which forces UTC time"""
+    """Return UTC time"""
     return time.gmtime()
 
 logging.Formatter.converter = timetz

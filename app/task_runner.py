@@ -32,11 +32,6 @@ class ThreadPool:
 
         logger.info("Initializing ThreadPool with %d threads", self.num_threads)
 
-        # ensure results directory exists
-        if not os.path.exists('results'):
-            os.makedirs('results')
-            logger.info("Created results directory")
-
         # data structures
         self.job_queue = Queue()
         self.shutdown_event = Event()
